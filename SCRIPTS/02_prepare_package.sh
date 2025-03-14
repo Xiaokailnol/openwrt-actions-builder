@@ -218,6 +218,12 @@ echo > ./feeds/packages/utils/watchcat/files/watchcat.config
 # 默认开启 Irqbalance
 #sed -i "s/enabled '0'/enabled '1'/g" feeds/packages/utils/irqbalance/files/irqbalance.config
 
+# 使用 TEO CPU 空闲调度器
+echo '
+CONFIG_CPU_IDLE_GOV_MENU=n
+CONFIG_CPU_IDLE_GOV_TEO=y
+' | tee -a ./target/linux/generic/config-6.6 ./target/linux/rockchip/armv8/config-6.6 > /dev/null
+
 ### 最后的收尾工作 ###
 # Lets Fuck
 mkdir -p package/base-files/files/usr/bin
