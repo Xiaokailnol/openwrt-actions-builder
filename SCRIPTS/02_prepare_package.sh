@@ -211,6 +211,8 @@ KERNEL_VERSION="6.12"
 CONFIG_CONTENT='
 CONFIG_CPU_IDLE_GOV_MENU=n
 CONFIG_CPU_IDLE_GOV_TEO=y
+
+CONFIG_BTRFS_FS=y
 '
 # 查找所有与内核 6.12 相关的配置文件并将这些配置项追加到文件末尾
 find ./target/linux/ -name "config-${KERNEL_VERSION}" | xargs -I{} sh -c "echo '$CONFIG_CONTENT' | tee -a {} > /dev/null"
