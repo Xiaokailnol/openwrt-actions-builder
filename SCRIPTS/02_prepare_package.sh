@@ -7,13 +7,25 @@ sed -i 's/Os/O2/g' include/target.mk
 # 更新 Feeds
 ./scripts/feeds update -a
 ./scripts/feeds install -a
-# 提取内核版本
-export KERNEL_VERSION=$(sed -n 's/^KERNEL_PATCHVER:=//p' ./target/linux/rockchip/Makefile) # 如 6.12
-if [ -z "$KERNEL_VERSION" ]; then
-    echo "Error: Failed to extract KERNEL_VERSION from ./target/linux/rockchip/Makefile" >&2
+
+# 定义预期的内核版本
+SUPPORTED_KERNEL="6.12"
+
+current_version=$(sed -n 's/^KERNEL_PATCHVER:=//p' ./target/linux/rockchip/Makefile) # 如 6.12
+if [ -z "${current_version}" ]; then
+    echo "Error: Failed to extract KERNEL_PATCHVER from ./target/linux/rockchip/Makefile"
     exit 1
 fi
-echo "KERNEL_VERSION=${KERNEL_VERSION}" | tee -a "$GITHUB_ENV"
+if [[ "${SUPPORTED_KERNEL}" != "${current_version}" ]]; then
+    echo "##########
+      错误：
+      编译的内核版本为 ${current_version} ，
+      预期的版本为 ${SUPPORTED_KERNEL}
+    ##########"
+    exit 1
+fi
+export KERNEL_VERSION="${SUPPORTED_KERNEL}"
+echo "KERNEL_VERSION=${SUPPORTED_KERNEL}" | tee -a "$GITHUB_ENV" 
 # 移除 SNAPSHOT 标签
 sed -i 's,-SNAPSHOT,,g' include/version.mk
 sed -i 's,-SNAPSHOT,,g' package/base-files/image-config.in
