@@ -25,7 +25,11 @@ if [[ "${SUPPORTED_KERNEL}" != "${current_version}" ]]; then
     exit 1
 fi
 export KERNEL_VERSION="${SUPPORTED_KERNEL}"
-echo "KERNEL_VERSION=${SUPPORTED_KERNEL}" | tee -a "$GITHUB_ENV" 
+echo "KERNEL_VERSION=${SUPPORTED_KERNEL}" | tee -a "$GITHUB_ENV"
+# 修改默认IP
+sed -i 's/192.168.1.1/10.0.0.1/g' package/base-files/files/bin/config_generate
+# 修改默认主机名称
+sed -i 's/OpenWrt/ZeroWrt/g' package/base-files/files/bin/config_generate
 # 移除 SNAPSHOT 标签
 sed -i 's,-SNAPSHOT,,g' include/version.mk
 sed -i 's,-SNAPSHOT,,g' package/base-files/image-config.in
@@ -157,8 +161,8 @@ rm -rf feeds/packages/utils/coremark
 ### 获取额外的 LuCI 应用、主题和依赖 ###
 # RK
 sed -i '/REQUIRE_IMAGE_METADATA/d' target/linux/rockchip/armv8/base-files/lib/upgrade/platform.sh
-wget https://github.com/coolsnowwolf/lede/raw/refs/heads/master/target/linux/rockchip/patches-6.12/991-arm64-dts-rockchip-add-more-cpu-operating-points-for.patch -O target/linux/rockchip/patches-6.12/991.patch
-wget https://github.com/coolsnowwolf/lede/raw/refs/heads/master/target/linux/rockchip/patches-6.12/992-rockchip-rk3399-overclock-to-2.2-1.8-GHz.patch -O target/linux/rockchip/patches-6.12/992.patch
+wget https://github.com/coolsnowwolf/lede/raw/refs/heads/master/target/linux/rockchip/patches-${KERNEL_VERSION}/991-arm64-dts-rockchip-add-more-cpu-operating-points-for.patch -O target/linux/rockchip/patches-6.12/991.patch
+wget https://github.com/coolsnowwolf/lede/raw/refs/heads/master/target/linux/rockchip/patches-${KERNEL_VERSION}/992-rockchip-rk3399-overclock-to-2.2-1.8-GHz.patch -O target/linux/rockchip/patches-6.12/992.patch
 # 更换 Nodejs 版本
 rm -rf ./feeds/packages/lang/node
 rm -rf ./package/new/feeds_packages_lang_node-prebuilt
@@ -244,5 +248,10 @@ cp -rf ../OpenWrt-Add/fuck ./package/base-files/files/usr/bin/fuck
 # 生成默认配置及缓存
 rm -rf .config
 sed -i 's,CONFIG_WERROR=y,# CONFIG_WERROR is not set,g' target/linux/generic/config-${KERNEL_VERSION}
+
+# Custom firmware version and author metadata
+sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='ZeroWrt-$(date +%Y%m%d)'/g"  package/base-files/files/etc/openwrt_release
+sed -i "s/DISTRIB_REVISION='*.*'/DISTRIB_REVISION=' By Xiaokailnol'/g" package/base-files/files/etc/openwrt_release
+sed -i "s|^OPENWRT_RELEASE=\".*\"|OPENWRT_RELEASE=\"ZeroWrt 标准版 @R$(date +%Y%m%d) BY Xiaokailnol\"|" package/base-files/files/usr/lib/os-release
 
 #exit 0
