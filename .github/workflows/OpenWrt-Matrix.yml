@@ -179,7 +179,7 @@ jobs:
 
       - name: Prepare Mixedwrt
         run: |
-          sudo chown -R runner:runner /home/runner/work/YAOF
+          sudo chown -R runner:runner /home/runner/work/openwrt-actions-builder
           cp -r ./SCRIPTS/${{ matrix.script_dir }}/. ./SCRIPTS/
           cp -r ./SCRIPTS/. ./
           /bin/bash 01_get_ready.sh
