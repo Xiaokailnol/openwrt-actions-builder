@@ -63,7 +63,7 @@ clone_repo $openwrt_pkg_repo master openwrt_pkg_ma &
 clone_repo $openwrt_add_repo master OpenWrt-Add &
 clone_repo $dockerman_repo master dockerman &
 clone_repo $docker_lib_repo master docker_lib &
-clone_repo $argon_repo master argon_repo &
+clone_repo $argon_repo openwrt-25.12 argon_repo &
 clone_repo $adguard_repo main adguard_repo &
 # 等待所有后台任务完成
 wait
