@@ -46,6 +46,7 @@ sbwfw876_repo="https://github.com/sbwml/openwrt_helloworld"
 sbw_pkg_repo="https://github.com/sbwml/openwrt_pkgs"
 natmap_repo="https://github.com/blueberry-pie-11/luci-app-natmap"
 xwrt_repo="https://github.com/QiuSimons/openwrt-natflow"
+argon_repo="https://gitea.kejizero.xyz/zhao/luci-theme-argon"
 
 # 开始克隆仓库，并行执行
 clone_repo $openwrt_repo $latest_release openwrt &
@@ -61,6 +62,7 @@ clone_repo $openwrt_pkg_repo master openwrt_pkg_ma &
 clone_repo $openwrt_add_repo master OpenWrt-Add &
 clone_repo $dockerman_repo master dockerman &
 clone_repo $docker_lib_repo master docker_lib &
+clone_repo $argon_repo master argon_repo &
 # 等待所有后台任务完成
 wait
 
@@ -72,6 +74,8 @@ cp -rf ./openwrt_snap/package/* ./openwrt/package/
 rm -rf openwrt/package/system/ca-certificates
 mv /tmp/ca-certificates.bak openwrt/package/system/ca-certificates
 cp -rf ./openwrt_snap/feeds.conf.default ./openwrt/feeds.conf.default
+rm -rf ./OpenWrt-Add/{luci-app-argon-config,luci-theme-argon}
+cp -rf ./argon_repo/* ./OpenWrt-Add/
 
 # 退出脚本
 exit 0
