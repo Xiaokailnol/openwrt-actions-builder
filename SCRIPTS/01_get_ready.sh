@@ -47,7 +47,6 @@ sbw_pkg_repo="https://github.com/sbwml/openwrt_pkgs"
 natmap_repo="https://github.com/blueberry-pie-11/luci-app-natmap"
 xwrt_repo="https://github.com/QiuSimons/openwrt-natflow"
 argon_repo="https://gitea.kejizero.xyz/zhao/luci-theme-argon"
-adguard_repo="https://github.com/sirpdboy/luci-app-adguardhome"
 
 # 开始克隆仓库，并行执行
 clone_repo $openwrt_repo $latest_release openwrt &
@@ -64,7 +63,6 @@ clone_repo $openwrt_add_repo master OpenWrt-Add &
 clone_repo $dockerman_repo master dockerman &
 clone_repo $docker_lib_repo master docker_lib &
 clone_repo $argon_repo openwrt-25.12 argon_repo &
-clone_repo $adguard_repo main adguard_repo &
 # 等待所有后台任务完成
 wait
 
@@ -79,7 +77,6 @@ cp -rf ./openwrt_snap/feeds.conf.default ./openwrt/feeds.conf.default
 rm -rf ./OpenWrt-Add/{luci-app-argon-config,luci-theme-argon}
 rm -rf ./OpenWrt-Add/openwrt_pkgs/luci-app-adguardhome
 cp -rf ./argon_repo/* ./OpenWrt-Add/
-cp -rf ./adguard_repo/luci-app-adguardhome ./OpenWrt-Add/
 
 # 退出脚本
 exit 0
