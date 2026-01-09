@@ -30,8 +30,10 @@ jobs:
         sudo timedatectl set-timezone 'Asia/Shanghai'
         git config --global user.name 'actions'
         git config --global user.email 'action@github.com'
+        latest_release="$(curl -s https://github.com/openwrt/openwrt/tags | grep -Eo "v[0-9\.]+\-*r*c*[0-9]*.tar.gz" | sed -n '/[2-9][5-9]/p' | sed -n 1p | sed 's/.tar.gz//g')"
         echo build_dir="/builder" >> "$GITHUB_ENV"
-        echo "SCRIPT_URL=http://127.0.0.1:8080" >> "$GITHUB_ENV"
+        echo "script_url=http://127.0.0.1:8080" >> "$GITHUB_ENV"
+        echo "latest_release=$latest_release" >> "$GITHUB_ENV"
 
     - name: Show system
       run: |
@@ -71,68 +73,119 @@ jobs:
     - name: Execute Custom Script
       working-directory: /builder
       run: |
-        SCRIPT_URL="http://127.0.0.1:8080/SCRIPTS"
-
         # Prepare environment
-        bash <(curl -fsSL ${SCRIPT_URL}//SCRIPTS/01_get_ready.sh)
+        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/01_get_ready.sh)
 
         # Prepare packages
-        bash <(curl -fsSL ${SCRIPT_URL}//SCRIPTS/02_prepare_package.sh)
+        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/02_prepare_package.sh)
 
         # Device specific customization
         case "${{ matrix.model }}" in
           friendlyarm_nanopi-r2c|friendlyarm_nanopi-r2s)
-            bash <(curl -fsSL ${SCRIPT_URL}//SCRIPTS/R2S/02_target_only.sh)
+            bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/R2S/02_target_only.sh)
             ;;
           friendlyarm_nanopi-r3s|friendlyarm_nanopi-r4s)
-            bash <(curl -fsSL ${SCRIPT_URL}//SCRIPTS/R4S/02_target_only.sh)
+            bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/R4S/02_target_only.sh)
             ;;
           x86_64)
-            bash <(curl -fsSL ${SCRIPT_URL}//SCRIPTS/X86/02_target_only.sh)
+            bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/X86/02_target_only.sh)
             ;;
         esac
 
         # Convert translations
-        bash <(curl -fsSL ${SCRIPT_URL}/SCRIPTS/03_convert_translation.sh)
+        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/03_convert_translation.sh)
 
         # Remove UPX
-        bash <(curl -fsSL ${SCRIPT_URL}/SCRIPTS/04_remove_upx.sh)
+        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/04_remove_upx.sh)
 
         # Create LuCI ACL
-        bash <(curl -fsSL ${SCRIPT_URL}/SCRIPTS/05_create_acl_for_luci.sh)
+        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/05_create_acl_for_luci.sh)
 
         # Fix permissions
-        bash <(curl -fsSL ${SCRIPT_URL}/SCRIPTS/08_fix_permissions.sh)
+        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/08_fix_permissions.sh)
 
-    - name: Make Config
+    - name: Download OpenWrt Config
       working-directory: /builder
       run: |
         case "${{ matrix.model }}" in
           friendlyarm_nanopi-r2c)
-            bash <(curl -fsSL ${SCRIPT_URL}/R2S/02_target_only.sh)
+            curl -fsSL ${{ env.script_url }}/SEED/R2C/config.seed -o openwrt/.config
             ;;
           friendlyarm_nanopi-r2s)
-            bash <(curl -fsSL ${SCRIPT_URL}/R2S/02_target_only.sh)
+            curl -fsSL ${{ env.script_url }}/SEED/R2S/config.seed -o openwrt/.config
             ;;
           friendlyarm_nanopi-r3s)
-            bash <(curl -fsSL ${SCRIPT_URL}/R4S/02_target_only.sh)
+            curl -fsSL ${{ env.script_url }}/SEED/R3S/config.seed -o openwrt/.config
             ;;
-          |friendlyarm_nanopi-r4s)
-            bash <(curl -fsSL ${SCRIPT_URL}/R4S/02_target_only.sh)
+          friendlyarm_nanopi-r4s)
+            curl -fsSL ${{ env.script_url }}/SEED/R4S/config.seed -o openwrt/.config
             ;;            
           x86_64)
-            bash <(curl -fsSL ${SCRIPT_URL}/X86/02_target_only.sh)
+            curl -fsSL ${{ env.script_url }}/SEED/X86/config.seed -o openwrt/.config
             ;;
         esac
-        
-        
 
-        
-        
-    
+    - name: Make Config
+      working-directory: /builder
+      run: |
+        cd openwrt && make defconfig
 
+    - name: Cache Toolchain
+      uses: HiGarfield/cachewrtbuild@main
+      with:
+        ccache: false
+        mixkey: openwrt-${{ env.latest_release }}-${{ matrix.model }}
+        prefix: ${{ env.build_dir }}
+        
+    - name: Make Download
+      working-directory: /builder
+      run: |
+        cd openwrt && make download -j50
+        make -j$(($(nproc) + 1)) package/network/utils/nftables/refresh V=s
+
+    - name: Compile Openwrt
+      working-directory: /builder
+      id: compile
+      run: |
+        cd openwrt
+        IGNORE_ERRORS=1 make -j$(($(nproc) + 1))
       
+    - name: Extensive logs after a failed compilation
+      working-directory: /builder
+      if: steps.compile.outcome == 'failure'
+      run: |
+        cd openwrt
+        make V=s
 
+    - name: Prepare Firmware Files
+      working-directory: /builder
+      run: |
+        mkdir -p rom info
+        if [[ "${{ matrix.model }}" == friendlyarm_nanopi-* ]]; then
+          cp -a openwrt/bin/targets/rockchip/*/*.img.gz rom/
+          cp -a openwrt/bin/targets/rockchip/*/*.manifest info/manifest.txt
+          cp -a openwrt/bin/targets/rockchip/*/config.buildinfo info/config.buildinfo
+          cd rom && sha256sum *gz > ../info/sha256sums.txt
+        elif [ "${{ matrix.model }}" = "x86_64" ]; then
+          cp -a openwrt/bin/targets/x86/*/*-ext4-combined-efi.img.gz rom/
+          cp -a openwrt/bin/targets/x86/*/*-squashfs-combined-efi.img.gz rom/
+          cp -a openwrt/bin/targets/x86/*/*-generic-rootfs.tar.gz rom/
+          cp -a openwrt/bin/targets/x86/*/*-generic.manifest info/manifest.txt
+          cp -a openwrt/bin/targets/x86/*/config.buildinfo info/config.buildinfo
+          cd rom && sha256sum *gz > ../info/sha256sums.txt
+        fi
+        cd ..
+        tar zcf rom/buildinfo_${{ matrix.model }}.tar.gz info
 
-
-        
+    - name: Create release
+      uses: ncipollo/release-action@v1.20.0
+      with:
+        name: OpenWrt-${{ env.latest_release }}
+        allowUpdates: true
+        tag: ${{ env.latest_release }}
+        commit: openwrt-25.12
+        replacesArtifacts: true
+        makeLatest: true
+        oken: ${{ secrets.GITHUB_TOKEN }}
+        artifacts: |
+          ${{ env.build_dir }}/rom/*
