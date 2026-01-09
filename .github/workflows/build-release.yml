@@ -135,7 +135,7 @@ jobs:
       with:
         ccache: false
         mixkey: openwrt-${{ env.latest_release }}-${{ matrix.model }}
-        prefix: ${{ env.build_dir }}
+        prefix: ${{ env.build_dir }}/openwrt
         
     - name: Make Download
       working-directory: /builder
