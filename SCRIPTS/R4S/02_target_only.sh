@@ -15,11 +15,6 @@ wget -qO- $CLASH_META_URL | tar xOvz > files/etc/openclash/core/clash_meta
 wget -qO- $GEOIP_URL > files/etc/openclash/GeoIP.dat
 wget -qO- $GEOSITE_URL > files/etc/openclash/GeoSite.dat
 chmod +x files/etc/openclash/core/clash*
-# AdguardHome
-mkdir -p files/usr/bin
-AGH_CORE=$(curl -sL https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest | grep /AdGuardHome_linux_arm64 | awk -F '"' '{print $4}')
-wget -qO- $AGH_CORE | tar xOvz > files/usr/bin/AdGuardHome
-chmod +x files/usr/bin/AdGuardHome
 
 #Vermagic
 latest_version="$(curl -s https://github.com/openwrt/openwrt/tags | grep -Eo "v[0-9\.]+\-*r*c*[0-9]*.tar.gz" | sed -n '/[2-9][5-9]/p' | sed -n 1p | sed 's/v//g' | sed 's/.tar.gz//g')"
