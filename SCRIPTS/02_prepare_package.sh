@@ -1,31 +1,13 @@
 #!/bin/bash
 clear
 
+cd openwrt
 ### 基础部分 ###
 # 使用 O2 级别的优化
 sed -i 's/Os/O2/g' include/target.mk
 # 更新 Feeds
 ./scripts/feeds update -a
 ./scripts/feeds install -a
-
-# 定义预期的内核版本
-SUPPORTED_KERNEL="6.12"
-
-current_version=$(sed -n 's/^KERNEL_PATCHVER:=//p' ./target/linux/rockchip/Makefile) # 如 6.12
-if [ -z "${current_version}" ]; then
-    echo "Error: Failed to extract KERNEL_PATCHVER from ./target/linux/rockchip/Makefile"
-    exit 1
-fi
-if [[ "${SUPPORTED_KERNEL}" != "${current_version}" ]]; then
-    echo "##########
-      错误：
-      编译的内核版本为 ${current_version} ，
-      预期的版本为 ${SUPPORTED_KERNEL}
-    ##########"
-    exit 1
-fi
-export KERNEL_VERSION="${SUPPORTED_KERNEL}"
-echo "KERNEL_VERSION=${SUPPORTED_KERNEL}" | tee -a "$GITHUB_ENV"
 # 修改默认IP
 sed -i 's/192.168.1.1/10.0.0.1/g' package/base-files/files/bin/config_generate
 # 修改默认主机名称
@@ -64,11 +46,11 @@ cp -rf ../openwrt_ma/package/network/config/firewall4 ./package/network/config/f
 
 ### 必要的 Patches ###
 # Patch arm64 型号名称
-cp -rf ../PATCH/kernel/arm/* ./target/linux/generic/hack-${KERNEL_VERSION}/
+cp -rf ../PATCH/kernel/arm/* ./target/linux/generic/hack-6.12/
 # BBRv3
-cp -rf ../PATCH/kernel/bbr3/* ./target/linux/generic/backport-${KERNEL_VERSION}/
+cp -rf ../PATCH/kernel/bbr3/* ./target/linux/generic/backport-6.12/
 # LRNG
-cp -rf ../PATCH/kernel/lrng/* ./target/linux/generic/hack-${KERNEL_VERSION}/
+cp -rf ../PATCH/kernel/lrng/* ./target/linux/generic/hack-6.12/
 echo '
 # CONFIG_RANDOM_DEFAULT_IMPL is not set
 CONFIG_LRNG=y
@@ -79,19 +61,19 @@ CONFIG_LRNG_CPU=y
 # CONFIG_LRNG_SCHED is not set
 CONFIG_LRNG_SELFTEST=y
 # CONFIG_LRNG_SELFTEST_PANIC is not set
-' >>./target/linux/generic/config-${KERNEL_VERSION}
+' >>./target/linux/generic/config-6.12
 # wg
-cp -rf ../PATCH/kernel/wg/* ./target/linux/generic/hack-${KERNEL_VERSION}/
+cp -rf ../PATCH/kernel/wg/* ./target/linux/generic/hack-6.12/
 # dont wrongly interpret first-time data
 echo "net.netfilter.nf_conntrack_tcp_max_retrans=5" >>./package/kernel/linux/files/sysctl-nf-conntrack.conf
 # OTHERS
-cp -rf ../PATCH/kernel/others/* ./target/linux/generic/pending-${KERNEL_VERSION}/
+cp -rf ../PATCH/kernel/others/* ./target/linux/generic/pending-6.12/
 # luci-app-attendedsysupgrade
 sed -i '/luci-app-attendedsysupgrade/d' feeds/luci/collections/luci-nginx/Makefile
 
 ### Fullcone-NAT 部分 ###
 # bcmfullcone
-cp -rf ../PATCH/kernel/bcmfullcone/* ./target/linux/generic/hack-${KERNEL_VERSION}/
+cp -rf ../PATCH/kernel/bcmfullcone/* ./target/linux/generic/hack-6.12/
 # set nf_conntrack_expect_max for fullcone
 wget -qO - https://github.com/openwrt/openwrt/commit/bbf39d07.patch | patch -p1
 echo "net.netfilter.nf_conntrack_helper = 1" >>./package/kernel/linux/files/sysctl-nf-conntrack.conf
@@ -110,8 +92,8 @@ popd
 
 ### Shortcut-FE 部分 ###
 # Patch Kernel 以支持 Shortcut-FE
-cp -rf ../PATCH/kernel/sfe/* ./target/linux/generic/hack-${KERNEL_VERSION}/
-cp -rf ../lede/target/linux/generic/pending-${KERNEL_VERSION}/613-netfilter_optional_tcp_window_check.patch ./target/linux/generic/pending-${KERNEL_VERSION}/613-netfilter_optional_tcp_window_check.patch
+cp -rf ../PATCH/kernel/sfe/* ./target/linux/generic/hack-6.12/
+cp -rf ../lede/target/linux/generic/pending-6.12/613-netfilter_optional_tcp_window_check.patch ./target/linux/generic/pending-6.12/613-netfilter_optional_tcp_window_check.patch
 # Patch LuCI 以增添 Shortcut-FE 开关
 pushd feeds/luci
 patch -p1 <../../../PATCH/pkgs/firewall/luci/0002-luci-app-firewall-add-shortcut-fe-option.patch
@@ -144,9 +126,9 @@ popd
 # make olddefconfig
 wget -qO - https://github.com/openwrt/openwrt/commit/c21a3570.patch | patch -p1
 # igc-fix
-cp -rf ../lede/target/linux/x86/patches-${KERNEL_VERSION}/996-intel-igc-i225-i226-disable-eee.patch ./target/linux/x86/patches-${KERNEL_VERSION}/996-intel-igc-i225-i226-disable-eee.patch
+cp -rf ../lede/target/linux/x86/patches-6.12/996-intel-igc-i225-i226-disable-eee.patch ./target/linux/x86/patches-6.12/996-intel-igc-i225-i226-disable-eee.patch
 # btf
-cp -rf ../PATCH/kernel/btf/* ./target/linux/generic/hack-${KERNEL_VERSION}/
+cp -rf ../PATCH/kernel/btf/* ./target/linux/generic/hack-6.12/
 
 ### 获取额外的基础软件包 ###
 # Disable Mitigations
@@ -164,8 +146,8 @@ rm -rf feeds/packages/utils/coremark
 ### 获取额外的 LuCI 应用、主题和依赖 ###
 # RK
 sed -i '/REQUIRE_IMAGE_METADATA/d' target/linux/rockchip/armv8/base-files/lib/upgrade/platform.sh
-wget https://github.com/coolsnowwolf/lede/raw/refs/heads/master/target/linux/rockchip/patches-${KERNEL_VERSION}/991-arm64-dts-rockchip-add-more-cpu-operating-points-for.patch -O target/linux/rockchip/patches-6.12/991.patch
-wget https://github.com/coolsnowwolf/lede/raw/refs/heads/master/target/linux/rockchip/patches-${KERNEL_VERSION}/992-rockchip-rk3399-overclock-to-2.2-1.8-GHz.patch -O target/linux/rockchip/patches-6.12/992.patch
+wget https://github.com/coolsnowwolf/lede/raw/refs/heads/master/target/linux/rockchip/patches-6.12/991-arm64-dts-rockchip-add-more-cpu-operating-points-for.patch -O target/linux/rockchip/patches-6.12/991.patch
+wget https://github.com/coolsnowwolf/lede/raw/refs/heads/master/target/linux/rockchip/patches-6.12/992-rockchip-rk3399-overclock-to-2.2-1.8-GHz.patch -O target/linux/rockchip/patches-6.12/992.patch
 # 更换 Nodejs 版本
 rm -rf ./feeds/packages/lang/node
 rm -rf ./package/new/feeds_packages_lang_node-prebuilt
@@ -242,7 +224,7 @@ CONFIG_CPU_IDLE_GOV_MENU=n
 CONFIG_CPU_IDLE_GOV_TEO=y
 '
 # 查找所有与内核相关的配置文件并将这些配置项追加到文件末尾
-find ./target/linux/ -name "config-${KERNEL_VERSION}" | xargs -I{} sh -c "echo '$CONFIG_CONTENT' | tee -a {} > /dev/null"
+find ./target/linux/ -name "config-6.12" | xargs -I{} sh -c "echo '$CONFIG_CONTENT' | tee -a {} > /dev/null"
 
 ### 最后的收尾工作 ###
 # Lets Fuck
@@ -250,7 +232,7 @@ mkdir -p package/base-files/files/usr/bin
 cp -rf ../OpenWrt-Add/fuck ./package/base-files/files/usr/bin/fuck
 # 生成默认配置及缓存
 rm -rf .config
-sed -i 's,CONFIG_WERROR=y,# CONFIG_WERROR is not set,g' target/linux/generic/config-${KERNEL_VERSION}
+sed -i 's,CONFIG_WERROR=y,# CONFIG_WERROR is not set,g' target/linux/generic/config-6.12
 
 # Custom firmware version and author metadata
 sed -i "s/DISTRIB_DESCRIPTION='*.*'/DISTRIB_DESCRIPTION='ZeroWrt-$(date +%Y%m%d)'/g"  package/base-files/files/etc/openwrt_release
