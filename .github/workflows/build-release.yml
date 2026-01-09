@@ -1,0 +1,138 @@
+name: Build releases
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [release]
+
+jobs:
+  build:
+    name: Build ${{ matrix.model }}-${{ matrix.version }}
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        model:
+          - friendlyarm_nanopi-r2c
+          - friendlyarm_nanopi-r2s
+          - friendlyarm_nanopi-r3s
+          - friendlyarm_nanopi-r4s
+          - x86_64
+        version:
+          - openwrt-25.12
+
+    steps:
+    - name: Setup variables
+      run: |
+        sudo timedatectl set-timezone 'Asia/Shanghai'
+        git config --global user.name 'actions'
+        git config --global user.email 'action@github.com'
+        echo build_dir="/builder" >> "$GITHUB_ENV"
+        echo "SCRIPT_URL=http://127.0.0.1:8080" >> "$GITHUB_ENV"
+
+    - name: Show system
+      run: |
+        echo -e "\n\e[1;32mCPU:\e[0m"
+        echo "$(grep 'model name' /proc/cpuinfo | head -1 | awk -F ': ' '{print $2}') ($(grep 'cpu MHz' /proc/cpuinfo | head -1 | awk -F ': ' '{print $2}')MHz) x $(grep processor /proc/cpuinfo  | wc -l)"
+        echo -e "\n\e[1;32mMemory:\e[0m"
+        free -h
+        echo -e "\n\e[1;32mStorage:\e[0m"
+        df -Th / /mnt
+        echo -e "\n\e[1;32mSystem:\e[0m"
+        lsb_release -a
+        echo -e "\n\e[1;32mKernel:\e[0m"
+        uname -a
+        echo
+
+    - name: Install Caddy Server
+      run: |
+        sudo curl -sL -o /usr/bin/caddy https://github.com/Xiaokailnol/openwrt-actions-builder/releases/download/caddy/caddy
+        sudo chmod 755 /usr/bin/caddy
+        echo ":8080 {" > caddyfile
+        echo "    root * $(pwd)/openwrt-actions-builder" >> caddyfile
+        echo "    file_server browse" >> caddyfile
+        echo "}" >> caddyfile
+        sudo /usr/bin/caddy start --config caddyfile --adapter caddyfile
+        
+    - name: Free disk space
+      uses: sbwml/actions@free-disk
+      with:
+        build-mount-path: /builder
+
+    - name: Build System Setup
+      uses: sbwml/actions@openwrt-build-setup
+
+    - name: Install LLVM
+      uses: sbwml/actions@install-llvm
+
+    - name: Execute Custom Script
+      working-directory: /builder
+      run: |
+        SCRIPT_URL="http://127.0.0.1:8080/SCRIPTS"
+
+        # Prepare environment
+        bash <(curl -fsSL ${SCRIPT_URL}//SCRIPTS/01_get_ready.sh)
+
+        # Prepare packages
+        bash <(curl -fsSL ${SCRIPT_URL}//SCRIPTS/02_prepare_package.sh)
+
+        # Device specific customization
+        case "${{ matrix.model }}" in
+          friendlyarm_nanopi-r2c|friendlyarm_nanopi-r2s)
+            bash <(curl -fsSL ${SCRIPT_URL}//SCRIPTS/R2S/02_target_only.sh)
+            ;;
+          friendlyarm_nanopi-r3s|friendlyarm_nanopi-r4s)
+            bash <(curl -fsSL ${SCRIPT_URL}//SCRIPTS/R4S/02_target_only.sh)
+            ;;
+          x86_64)
+            bash <(curl -fsSL ${SCRIPT_URL}//SCRIPTS/X86/02_target_only.sh)
+            ;;
+        esac
+
+        # Convert translations
+        bash <(curl -fsSL ${SCRIPT_URL}/SCRIPTS/03_convert_translation.sh)
+
+        # Remove UPX
+        bash <(curl -fsSL ${SCRIPT_URL}/SCRIPTS/04_remove_upx.sh)
+
+        # Create LuCI ACL
+        bash <(curl -fsSL ${SCRIPT_URL}/SCRIPTS/05_create_acl_for_luci.sh)
+
+        # Fix permissions
+        bash <(curl -fsSL ${SCRIPT_URL}/SCRIPTS/08_fix_permissions.sh)
+
+    - name: Make Config
+      working-directory: /builder
+      run: |
+        case "${{ matrix.model }}" in
+          friendlyarm_nanopi-r2c)
+            bash <(curl -fsSL ${SCRIPT_URL}/R2S/02_target_only.sh)
+            ;;
+          friendlyarm_nanopi-r2s)
+            bash <(curl -fsSL ${SCRIPT_URL}/R2S/02_target_only.sh)
+            ;;
+          friendlyarm_nanopi-r3s)
+            bash <(curl -fsSL ${SCRIPT_URL}/R4S/02_target_only.sh)
+            ;;
+          |friendlyarm_nanopi-r4s)
+            bash <(curl -fsSL ${SCRIPT_URL}/R4S/02_target_only.sh)
+            ;;            
+          x86_64)
+            bash <(curl -fsSL ${SCRIPT_URL}/X86/02_target_only.sh)
+            ;;
+        esac
+        
+        
+
+        
+        
+    
+
+      
+
+
+
+        
