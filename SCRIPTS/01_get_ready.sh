@@ -78,5 +78,8 @@ rm -rf ./OpenWrt-Add/{luci-app-argon-config,luci-theme-argon}
 rm -rf ./OpenWrt-Add/openwrt_pkgs/luci-app-adguardhome
 cp -rf ./argon_repo/* ./OpenWrt-Add/
 
+# 修改默认源地址
+sed -i 's,mirror.sjtu.edu.cn/openwrt,openwrt.kejizero.xyz,g' ./OpenWrt-Add/addition-trans-zh/files/zzz-default-settings
+
 # 退出脚本
 exit 0
