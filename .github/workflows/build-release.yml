@@ -25,12 +25,6 @@ jobs:
           - openwrt-25.12
 
     steps:
-    - name: Checkout
-      continue-on-error: true
-      uses: actions/checkout@main
-      with:
-        path: openwrt-actions-builder
-    
     - name: Setup variables
       run: |
         sudo timedatectl set-timezone 'Asia/Shanghai'
