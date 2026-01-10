@@ -65,7 +65,6 @@ jobs:
         sudo /usr/bin/caddy start --config caddyfile --adapter caddyfile
         
     - name: Maximize build space
-      if: inputs.build_firmware
       uses: easimon/maximize-build-space@master
       with:
         swap-size-mb: 1024
