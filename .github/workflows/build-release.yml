@@ -53,16 +53,6 @@ jobs:
         echo -e "\n\e[1;32mKernel:\e[0m"
         uname -a
         echo
-
-    - name: Install Caddy Server
-      run: |
-        sudo curl -sL -o /usr/bin/caddy https://github.com/Xiaokailnol/openwrt-actions-builder/releases/download/caddy/caddy
-        sudo chmod 755 /usr/bin/caddy
-        echo ":8080 {" > caddyfile
-        echo "    root * $(pwd)/openwrt-actions-builder" >> caddyfile
-        echo "    file_server browse" >> caddyfile
-        echo "}" >> caddyfile
-        sudo /usr/bin/caddy start --config caddyfile --adapter caddyfile
         
     - name: Maximize build space
       uses: easimon/maximize-build-space@master
@@ -93,6 +83,16 @@ jobs:
         sudo -E git config --global core.abbrev auto
         df -h
 
+    - name: Install Caddy Server
+      run: |
+        sudo curl -sL -o /usr/bin/caddy https://github.com/Xiaokailnol/openwrt-actions-builder/releases/download/caddy/caddy
+        sudo chmod 755 /usr/bin/caddy
+        echo ":8080 {" > caddyfile
+        echo "    root * $(pwd)/openwrt-actions-builder" >> caddyfile
+        echo "    file_server browse" >> caddyfile
+        echo "}" >> caddyfile
+        sudo /usr/bin/caddy start --config caddyfile --adapter caddyfile
+        
     - name: Prepare Mixedwrt
       run: |
         sudo chown -R runner:runner /home/runner/work/openwrt-actions-builder
