@@ -26,10 +26,7 @@ jobs:
 
     steps:
     - name: Checkout
-      continue-on-error: true
       uses: actions/checkout@main
-      with:
-        path: openwrt-actions-builder
         
     - name: Setup variables
       run: |
@@ -37,7 +34,6 @@ jobs:
         git config --global user.name 'actions'
         git config --global user.email 'action@github.com'
         latest_release="$(curl -s https://github.com/openwrt/openwrt/tags | grep -Eo "v[0-9\.]+\-*r*c*[0-9]*.tar.gz" | sed -n '/[2-9][5-9]/p' | sed -n 1p | sed 's/.tar.gz//g')"
-        echo "script_url=http://127.0.0.1:8080" >> "$GITHUB_ENV"
         echo "latest_release=$latest_release" >> "$GITHUB_ENV"
 
     - name: Show system
@@ -82,74 +78,70 @@ jobs:
         sudo -E git config --global user.name 'GitHub Actions' && git config --global user.email 'noreply@github.com'
         sudo -E git config --global core.abbrev auto
         df -h
-
-    - name: Install Caddy Server
-      run: |
-        sudo curl -sL -o /usr/bin/caddy https://github.com/Xiaokailnol/openwrt-actions-builder/releases/download/caddy/caddy
-        sudo chmod 755 /usr/bin/caddy
-        echo ":8080 {" > caddyfile
-        echo "    root * $(pwd)/openwrt-actions-builder" >> caddyfile
-        echo "    file_server browse" >> caddyfile
-        echo "}" >> caddyfile
-        sudo /usr/bin/caddy start --config caddyfile --adapter caddyfile
         
     - name: Prepare Mixedwrt
       run: |
-        sudo chown -R runner:runner /home/runner/work/openwrt-actions-builder
-        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/01_get_ready.sh)
+        sudo chown -R runner:runner /home/runner/work/YAOF
+        cp -r ./SCRIPTS/. ./
+        /bin/bash 01_get_ready.sh
 
     - name: Prepare Package
       working-directory: ${{ github.workspace }}/openwrt
-      run: |      
-        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/02_prepare_package.sh)
+      run: |
+        cp -r ../SCRIPTS/. ./
+        /bin/bash 02_prepare_package.sh
         case "${{ matrix.model }}" in
           friendlyarm_nanopi-r2c|friendlyarm_nanopi-r2s)
-            bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/R2S/02_target_only.sh)
+            cp -r ./SCRIPTS/R2S/. ./SCRIPTS/
+            /bin/bash 02_target_only.sh
             ;;
           friendlyarm_nanopi-r3s|friendlyarm_nanopi-r4s)
-            bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/R4S/02_target_only.sh)
+            cp -r ./SCRIPTS/R4S/. ./SCRIPTS/
+            /bin/bash 02_target_only.sh
             ;;
           x86_64)
-            bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/X86/02_target_only.sh)
+            cp -r ./SCRIPTS/X86/. ./SCRIPTS/
+            /bin/bash 02_target_only.sh
             ;;
         esac
-        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/04_remove_upx.sh)
+        /bin/bash 04_remove_upx.sh
 
     - name: QTMDFW4
       working-directory: ${{ github.workspace }}/openwrt
       run: |
         case "${{ matrix.model }}" in
           friendlyarm_nanopi-r2c)
-            curl -fsSL ${{ env.script_url }}/SEED/R2C/config.seed -o .config
+            cp -rf ../SEED/R2C/config.seed .config
             ;;
           friendlyarm_nanopi-r2s)
-            curl -fsSL ${{ env.script_url }}/SEED/R2S/config.seed -o .config
+            cp -rf ../SEED/R2S/config.seed .config
             ;;
           friendlyarm_nanopi-r3s)
-            curl -fsSL ${{ env.script_url }}/SEED/R3S/config.seed -o .config
+            cp -rf ../SEED/R3S/config.seed .config
             ;;
           friendlyarm_nanopi-r4s)
-            curl -fsSL ${{ env.script_url }}/SEED/R4S/config.seed -o .config
+            cp -rf ../SEED/R4S/config.seed .config
             ;;            
           x86_64)
-            curl -fsSL ${{ env.script_url }}/SEED/X86/config.seed -o .config
+            cp -rf ../SEED/X86/config.seed .config
             ;;
         esac 
 
     - name: Convert Translation
       working-directory: ${{ github.workspace }}/openwrt
       run: |
-        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/03_convert_translation.sh)
+        /bin/bash 03_convert_translation.sh
         
     - name: Add ACL
       working-directory: ${{ github.workspace }}/openwrt
       run: |
-        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/05_create_acl_for_luci.sh) -a
+        /bin/bash 05_create_acl_for_luci.sh -a
 
     - name: Fix Permissions
       working-directory: ${{ github.workspace }}/openwrt
       run: |
-        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/08_fix_permissions.sh)
+        sudo -E chmod -R 755 ./08_fix_permissions.sh
+        /bin/bash 08_fix_permissions.sh
 
     - name: Make Config
       working-directory: ${{ github.workspace }}/openwrt
