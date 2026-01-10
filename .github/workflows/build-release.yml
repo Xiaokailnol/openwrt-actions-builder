@@ -82,6 +82,17 @@ jobs:
     - name: Prepare Mixedwrt
       run: |
         sudo chown -R runner:runner /home/runner/work/YAOF
+        case "${{ matrix.model }}" in
+          friendlyarm_nanopi-r2c|friendlyarm_nanopi-r2s)
+            cp -r ./SCRIPTS/R2S/. ./SCRIPTS/
+            ;;
+          friendlyarm_nanopi-r3s|friendlyarm_nanopi-r4s)
+            cp -r ./SCRIPTS/R4S/. ./SCRIPTS/
+            ;;
+          x86_64)
+            cp -r ./SCRIPTS/X86/. ./SCRIPTS/
+            ;;
+        esac
         cp -r ./SCRIPTS/. ./
         /bin/bash 01_get_ready.sh
 
@@ -90,20 +101,7 @@ jobs:
       run: |
         cp -r ../SCRIPTS/. ./
         /bin/bash 02_prepare_package.sh
-        case "${{ matrix.model }}" in
-          friendlyarm_nanopi-r2c|friendlyarm_nanopi-r2s)
-            cp ./SCRIPTS/R2S/02_target_only.sh ./02_target_only.sh
-            /bin/bash 02_target_only.sh
-            ;;
-          friendlyarm_nanopi-r3s|friendlyarm_nanopi-r4s)
-            cp ./SCRIPTS/R4S/02_target_only.sh ./02_target_only.sh
-            /bin/bash 02_target_only.sh
-            ;;
-          x86_64)
-            cp ./SCRIPTS/X86/02_target_only.sh ./02_target_only.sh
-            /bin/bash 02_target_only.sh
-            ;;
-        esac
+        /bin/bash 02_target_only.sh
         /bin/bash 04_remove_upx.sh
 
     - name: QTMDFW4
