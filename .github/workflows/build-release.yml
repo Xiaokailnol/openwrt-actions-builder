@@ -81,7 +81,7 @@ jobs:
         
     - name: Prepare Mixedwrt
       run: |
-        sudo chown -R runner:runner /home/runner/work/YAOF
+        sudo chown -R runner:runner /home/runner/work/openwrt-actions-builder
         case "${{ matrix.model }}" in
           friendlyarm_nanopi-r2c|friendlyarm_nanopi-r2s)
             cp -r ./SCRIPTS/R2S/. ./SCRIPTS/
