@@ -108,7 +108,7 @@ jobs:
         bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/04_remove_upx.sh)
 
         # Create LuCI ACL
-        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/05_create_acl_for_luci.sh)
+        bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/05_create_acl_for_luci.sh) -a
 
         # Fix permissions
         bash <(curl -fsSL ${{ env.script_url }}/SCRIPTS/08_fix_permissions.sh)
