@@ -92,15 +92,15 @@ jobs:
         /bin/bash 02_prepare_package.sh
         case "${{ matrix.model }}" in
           friendlyarm_nanopi-r2c|friendlyarm_nanopi-r2s)
-            cp -r ./SCRIPTS/R2S/. ./SCRIPTS/
+            cp ./SCRIPTS/R2S/02_target_only.sh ./02_target_only.sh
             /bin/bash 02_target_only.sh
             ;;
           friendlyarm_nanopi-r3s|friendlyarm_nanopi-r4s)
-            cp -r ./SCRIPTS/R4S/. ./SCRIPTS/
+            cp ./SCRIPTS/R4S/02_target_only.sh ./02_target_only.sh
             /bin/bash 02_target_only.sh
             ;;
           x86_64)
-            cp -r ./SCRIPTS/X86/. ./SCRIPTS/
+            cp ./SCRIPTS/X86/02_target_only.sh ./02_target_only.sh
             /bin/bash 02_target_only.sh
             ;;
         esac
