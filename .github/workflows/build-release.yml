@@ -199,6 +199,6 @@ jobs:
         commit: openwrt-25.12
         replacesArtifacts: true
         makeLatest: true
-        oken: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: |
           ${{ github.workspace }}/rom/*
