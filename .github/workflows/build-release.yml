@@ -24,10 +24,7 @@ jobs:
         version:
           - openwrt-25.12
 
-    steps:
-    - name: Checkout
-      uses: actions/checkout@main
-        
+    steps:   
     - name: Setup variables
       run: |
         sudo timedatectl set-timezone 'Asia/Shanghai'
@@ -61,6 +58,9 @@ jobs:
         remove-haskell: "true"
         remove-codeql: "true"
 
+    - name: Checkout
+      uses: actions/checkout@main
+      
     - name: Init build dependencies
       env:
         DEBIAN_FRONTEND: noninteractive
