@@ -6,7 +6,7 @@ OTA_URL="https://gh-proxy.kejizero.xyz/https://github.com/Xiaokailnol/openwrt-ac
 
 VERSION="${latest_release#v}"
     
-case "${{ matrix.model }}" in
+case "$1" in
   friendlyarm_nanopi-r2c)
     SHA256=$(sha256sum bin/targets/rockchip/armv8*/*-squashfs-sysupgrade.img.gz | awk '{print $1}')
     ;;
@@ -24,7 +24,7 @@ case "${{ matrix.model }}" in
     ;;
 esac
 
-case "${{ matrix.model }}" in
+case "$1" in
   x86_64)
     cat > ota/x86_64.json <<EOF
 {
