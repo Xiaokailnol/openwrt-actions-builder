@@ -81,5 +81,8 @@ cp -rf ./argon_repo/* ./OpenWrt-Add/
 # 修改默认源地址
 sed -i 's,mirror.sjtu.edu.cn/openwrt,openwrt.kejizero.xyz,g' ./OpenWrt-Add/addition-trans-zh/files/zzz-default-settings
 
+# 删除Argon相关设置
+sed -i '/#Argon 主题/,/uci commit argon/d' ./OpenWrt-Add/addition-trans-zh/files/zzz-default-settings
+
 # 退出脚本
 exit 0
