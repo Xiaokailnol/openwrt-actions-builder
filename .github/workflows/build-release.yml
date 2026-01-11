@@ -32,6 +32,7 @@ jobs:
         git config --global user.email 'action@github.com'
         latest_release="$(curl -s https://github.com/openwrt/openwrt/tags | grep -Eo "v[0-9\.]+\-*r*c*[0-9]*.tar.gz" | sed -n '/[2-9][5-9]/p' | sed -n 1p | sed 's/.tar.gz//g')"
         echo "latest_release=$latest_release" >> "$GITHUB_ENV"
+        echo "CURRENT_DATE=$(date +%s)" >> "$GITHUB_ENV"
 
     - name: Show system
       run: |
@@ -169,6 +170,11 @@ jobs:
       if: steps.compile.outcome == 'failure'
       run: |
         make V=s
+
+    - name: Generate OTA File
+      working-directory: ${{ github.workspace }}/openwrt
+      run: |
+        /bin/bash 09_ota_update.sh  
 
     - name: Prepare Firmware Files
       working-directory: ${{ github.workspace }}
