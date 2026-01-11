@@ -180,6 +180,7 @@ jobs:
       working-directory: ${{ github.workspace }}
       run: |
         mkdir -p rom info
+        cp -a ota/* rom/
         if [[ "${{ matrix.model }}" == friendlyarm_nanopi-* ]]; then
           cp -a openwrt/bin/targets/rockchip/*/*.img.gz rom/
           cp -a openwrt/bin/targets/rockchip/*/*.manifest info/manifest.txt
