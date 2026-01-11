@@ -6,6 +6,13 @@
 [ $(uname -m) = "x86_64" ] && alias board_name="echo x86_64"
 [ "$OPENWRT_BOARD" = "armsr/armv8" ] && alias board_name="echo armsr,armv8"
 
+# theme
+if [ -d "/www/luci-static/argon" ] && [ -z "$(uci -q get luci.main.pollinterval)" ]; then
+    uci set luci.main.mediaurlbase='/luci-static/argon'
+    uci set luci.main.pollinterval='3'
+    uci commit luci
+fi
+
 devices_setup()
 {
     case "$(board_name)" in
