@@ -174,7 +174,7 @@ jobs:
     - name: Generate OTA File
       working-directory: ${{ github.workspace }}/openwrt
       run: |
-        /bin/bash 09_ota_update.sh  
+        /bin/bash 09_ota_update.sh ${{ matrix.model }}
 
     - name: Prepare Firmware Files
       working-directory: ${{ github.workspace }}
