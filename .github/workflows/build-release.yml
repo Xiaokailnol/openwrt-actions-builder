@@ -147,7 +147,6 @@ jobs:
         make defconfig
 
     - name: Cache
-      if: inputs.build_firmware
       uses: HiGarfield/cachewrtbuild@main
       with:
         mixkey: ${{ matrix.model }}
